@@ -1,0 +1,193 @@
+GermEval 2019 - Task 2 - Lab Notes
+
+The model is a combination of Naive Bayes and Logistic Regression. The tweets
+were vectorized using a term frequency matrix, thus a bag of words approach
+was chosen. This file summarizes the experiments that were conducted on the
+dev-set from GermEval 2018 (5009 labeled tweets).
+
+All reported results are micro averaged F1-scores on the provided test-set from
+GermEval 2018 (3532 un-labeled tweets). The results were reached by running the
+evaluation script for GermEval 2019 with the 2018 goldfile against the
+predictions on the 2018 test-set.
+
+* = Potential improvements
+
+Experiments (Vectorization)
+Info: Default scikit-lear Logistic Regression with Naive Bayes.
+
+LogisticRegression(penalty=’l2’, dual=False, tol=0.0001, C=1.0,
+fit_intercept=True, intercept_scaling=1, class_weight=None, random_state=None,
+solver=’warn’, max_iter=100, multi_class=’warn’, verbose=0, warm_start=False,
+n_jobs=None, l1_ratio=None)
+aka LogisticRegression()
+
+1.0) Default term-frequency times inverse document-frequency matrix (tf-idf)
+
+TfidfVectorizer(input=’content’, encoding=’utf-8’, decode_error=’strict’,
+strip_accents=None, lowercase=True, preprocessor=None, tokenizer=None,
+analyzer=’word’, stop_words=None, token_pattern=’(?u)\b\w\w+\b’,
+ngram_range=(1, 1), max_df=4.0, min_df=0.4, max_features=None, vocabulary=None,
+binary=False, dtype=<class ‘numpy.float64’>, norm=’l2’, use_idf=True,
+smooth_idf=False, sublinear_tf=True)
+aka TfidfVectorizer() ; LogisticRegression()
+
+We use some defaults:
+TfidfVectorizer(tokenizer=tokenize_spacy, min_df=4, max_df=0.4, use_idf=True,
+               smooth_idf=False, sublinear_tf=True, analyzer='word',
+               ngram_range=(1, 1))
+
+Result: 66.55 / 39.70 /// 66.52 / 39.70
+
+1.1) Strip Accents (strip_accents='unicode')
+
+Result: 66.65* / 39.75* /// 66.48 / 39.75
+
+1.2) No Lowercase (lowercase=False)
+
+Result: 64.67 / 39.17 /// 65.01 / 39.22
+
+1.3) Strip Accents & No Lowercase (always the same as 1.2)
+
+Result: 64.67 / 39.17 /// 65.01 / 39.22
+
+=> Use Lowercase and Accent Stripping
+
+2.0) N-grams
+Word level, default: TfidfVectorizer(analyzer='word', ngram_range=(1, 1), strip_accents='unicode')
+XXX: was probably with lowercase=False
+2.0) 1,1 -> 66.65* / 39.75 /// 
+2.1) 1,2 -> 64.96 / 41.14* ///
+2.2) 1,3 -> 64.90 / 40.53
+2.3) 2,3 -> 58.74 / 30.90
+
+Character level, default: TfidfVectorizer(analyzer='char', ngram_range=(1, 4), strip_accents='unicode')
+2.0b) 1,4 -> 64.74 / 37.36
+2.1b) 2,5 -> 66.72 / 38.07
+2.3b) 3,6 -> 66.93* / 38.55*
+
+-----
+3) Hyperparameter Tuning
+3.0) Dual/Balanced
+Dual/Balanced: no/no -> 66.93 / 38.55
+Dual/Balanced: no/yes -> 71.42* / 45.14*
+
+3.1) L2 Regularization (Note: Reduces Subtask II score)
+C=1.0 -> 71.42 / 45.14
+C=16.0 -> 71.94 / 46.46*
+C=14.0 -> 72.02* / 46.39
+
+4.0) Preprocessing (Note: Reduces Subtask II score)
+Without -> 72.02 / 46.39*
+With -> 72.28* / 45.69
+
+5.0) Cutoff
+0.5 -> 72.28 / 45.69
+0.485 -> 72.58* / 45.69*
+
+-----
+-----
+# 1,1 ngrams -> 62.95 (C=40.0); lowercase=False
+# 1,2 ngrams -> 62.88 (C=40.0); lowercase=False
+
+# 1,1 ngrams -> 64.47 (C=1.0); lowercase=False
+
+# 1,1 ngrams -> 66.41 (C=1.0); lowercase=True
+# 1,2 ngrams -> 65.88 (C=1.0); lowercase=True
+# 1,3 ngrams -> 65.80 (C=1.0); lowercase=True
+# 1,4 ngrams -> 66.02 (C=1.0); lowercase=True
+# 1,5 ngrams -> 65.87 (C=1.0); lowercase=True
+# 1,6 ngrams -> 65.87 (C=1.0); lowercase=True
+
+# 1,4 ngrams ->  65.79 (C=1.0); lowercase=True; class_weight='balanced'
+
+# 3,3 ngrams -> 58.07
+
+# 1,4 ngrams ->  66.02 (C=1.0); lowercase=True; 4/1.0
+# 1,4 ngrams ->  64.07(C=1.0); lowercase=True; 2/0.8
+
+# 1,1 ngrams ->  66.41 (C=1.0); lowercase=True; 4/0.8
+# 1,1 ngrams ->  66.99 (C=4.0); lowercase=True; 4/0.8
+# 1,1 ngrams ->  67.69 (C=4.0); lowercase=True; 3/0.8
+# 1,1 ngrams ->  67.97 (C=4.0); lowercase=True; 2/0.8
+# 1,1 ngrams ->  61.61 (C=4.0); lowercase=True; 1/0.8
+
+# 1,1 ngrams ->  63.06 (C=8.0); lowercase=True; 2/0.8
+# 1,1 ngrams ->  66.26 (C=1.0); lowercase=True; 2/0.8
+# 1,1 ngrams ->  67.47 (C=2.0); lowercase=True; 2/0.8
+# 1,1 ngrams ->  68.05 (C=3.0); lowercase=True; 2/0.8*
+
+# 1,1 ngrams ->  61.88 (C=3.0); lowercase=True; 3/0.8
+# 1,1 ngrams ->  68.00 (C=3.5); lowercase=True; 2/0.8
+
+# 1,2 ngrams ->  66.16 (C=3.0); lowercase=True; 2/0.8
+# 1,3 ngrams ->  65.93 (C=3.0); lowercase=True; 2/0.8
+# 1,4 ngrams ->  65.95 (C=3.0); lowercase=True; 2/0.8
+
+# 2,3 ngrams ->  59.88 (C=3.0); lowercase=True; 2/0.8
+
+# character level
+# 3,6 ngrams -> 70.71 (c=4.0); lowercase=True; 4/1.0
+# 3,6 ngrams -> 69.03 (c=4.0); lowercase=False; 4/1.0
+
+# 3,6 ngrams -> 71.03 (c=8.0); lowercase=True; 4/1.0
+# 3,6 ngrams -> 69.17 (c=2.0); lowercase=True; 4/1.0
+# 3,6 ngrams -> 70.79 (c=6.0); lowercase=True; 4/1.0
+# 3,6 ngrams -> 71.56 (c=16.0); lowercase=True; 4/1.0
+# 3,6 ngrams -> 71.11 (c=32.0); lowercase=True; 4/1.0
+# 3,6 ngrams -> 71.04 (c=24.0); lowercase=True; 4/1.0
+# 3,6 ngrams -> 71.29 (c=20.0); lowercase=True; 4/1.0
+# 3,6 ngrams -> 71.39 (c=18.0); lowercase=True; 4/1.0
+# 3,6 ngrams -> 71.38 (c=12.0); lowercase=True; 4/1.0
+# 3,6 ngrams -> 71.71* (c=14.0); lowercase=True; 4/1.0
+# 3,6 ngrams -> 71.57 (c=15.0); lowercase=True; 4/1.0
+# 3,6 ngrams -> 71.45 (c=17.0); lowercase=True; 4/1.0
+
+# 3,6 ngrams -> 71.14 (c=14.0); lowercase=True; 5/1.0
+# 3,6 ngrams -> 71.23 (c=14.0); lowercase=True; 3/1.0
+# 3,6 ngrams -> 71.21 (c=14.0); lowercase=True; 3/0.5
+# 3,6 ngrams -> 71.57 (c=14.0); lowercase=True; 4/0.5
+
+# 3,6 ngrams -> 69.32 (c=14.0); lowercase=True; 4/1.0; l1 regularization
+
+# 3,10 ngrams -> 70.89 (c=14.0); lowercase=True; 4/1.0
+# 3,8 ngrams ->  70.92 (c=14.0); lowercase=True; 4/1.0
+# 2,6 ngrams ->  71.07 (c=14.0); lowercase=True; 4/1.0
+# 2,5 ngrams ->  71.15 (c=14.0); lowercase=True; 4/1.0
+# 4,7 ngrams ->  71.34 (c=14.0); lowercase=True; 4/1.0
+# 5,8 ngrams ->  69.84 (c=14.0); lowercase=True; 4/1.0
+
+# 3,6 ngrams -> 71.61 (c=14.0); lowercase=True; 4/0.4
+
+# 1,10 ngrams -> 70.70
+# 1,6 ngrams -> 70.99
+# 1,40 ngrams -> 69.71
+
+# Class labels (strangely balanced works best)
+# 2/1: 70.3
+# 1/2: 71.95
+# balanced: 72.28*
+
+# Cutoff (note that this should be 0.5)
+# 0.5 -> 72.28
+# 0.51 -> 72.14
+# 0.55 -> 71.76
+# 0.6 -> 71.59
+# 0.4 -> 71.20
+
+# 0.495 -> 72.47
+# 0.49 -> 72.47
+# 0.485 -> 72.62* (lemmatized: 72.58)
+# 0.48 -> 72.44
+
+# 0.47 -> 72.24
+
+----
+----
+# 3,6c -> 45.67
+# 3,7c -> 43.8
+# 3,6c -> 44.41 (1/2 classes)
+# 3,6c -> 45.71* (2/1 classes)
+# 3,6c -> 45.43 (3/1 classes)
+
+# Balanced
+# 4/1.0; 3,6c -> 45.72* (balanced) -> same lemmatized
